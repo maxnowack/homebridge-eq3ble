@@ -90,10 +90,10 @@ export default function createThermostat({ Service, Characteristic }) {
       })
     }
     getTargetHeatingCoolingState(callback) {
-      this.getCachedInfo().then(({ temperature, status }) => {
-        if (temperature <= 4.5) {
+      this.getCachedInfo().then(({ targetTemperature, status }) => {
+        if (targetTemperature <= 4.5) {
           callback(null, Characteristic.TargetHeatingCoolingState.OFF)
-        } else if (temperature >= 30 || status.manual || status.boost) {
+        } else if (targetTemperature >= 30 || status.manual || status.boost) {
           callback(null, Characteristic.TargetHeatingCoolingState.HEAT)
         } else {
           callback(null, Characteristic.TargetHeatingCoolingState.AUTO)
@@ -101,8 +101,8 @@ export default function createThermostat({ Service, Characteristic }) {
       })
     }
     getTargetTemperature(callback) {
-      this.getCachedInfo().then(({ temperature }) => {
-        callback(null, temperature < 10 ? 10 : temperature)
+      this.getCachedInfo().then(({ targetTemperature }) => {
+        callback(null, targetTemperature < 10 ? 10 : targetTemperature)
       })
     }
     getTemperatureDisplayUnits(callback) {
