@@ -58,7 +58,7 @@ export default function createThermostat({ Service, Characteristic }) {
       this.connect().then(() => {
         fn(...args)
         this.startDisconnectTimeout()
-      })
+      }, err => fn(...args.concat(err)))
     }
     getCachedInfo() {
       return new Promise((resolve, reject) => {
@@ -80,17 +80,19 @@ export default function createThermostat({ Service, Characteristic }) {
       })
     }
 
-    getCurrentHeatingCoolingState(callback) {
-      this.getCachedInfo().then(({ valvePosition }) => {
+    getCurrentHeatingCoolingState(callback, err) {
+      if (err) return callback(err)
+      return this.getCachedInfo().then(({ valvePosition }) => {
         if (valvePosition) {
           callback(null, Characteristic.CurrentHeatingCoolingState.HEAT)
         } else {
           callback(null, Characteristic.CurrentHeatingCoolingState.OFF)
         }
-      })
+      }, deviceErr => callback(deviceErr))
     }
-    getTargetHeatingCoolingState(callback) {
-      this.getCachedInfo().then(({ targetTemperature, status }) => {
+    getTargetHeatingCoolingState(callback, err) {
+      if (err) return callback(err)
+      return this.getCachedInfo().then(({ targetTemperature, status }) => {
         if (targetTemperature <= 4.5) {
           callback(null, Characteristic.TargetHeatingCoolingState.OFF)
         } else if (targetTemperature >= 30 || status.manual || status.boost) {
@@ -98,31 +100,38 @@ export default function createThermostat({ Service, Characteristic }) {
         } else {
           callback(null, Characteristic.TargetHeatingCoolingState.AUTO)
         }
-      })
+      }, deviceErr => callback(deviceErr))
     }
-    getTargetTemperature(callback) {
-      this.getCachedInfo().then(({ targetTemperature }) => {
+    getTargetTemperature(callback, err) {
+      if (err) return callback(err)
+      return this.getCachedInfo().then(({ targetTemperature }) => {
         callback(null, targetTemperature < 10 ? 10 : targetTemperature)
-      })
+      }, deviceErr => callback(deviceErr))
     }
-    getTemperatureDisplayUnits(callback) {
-      callback(null, this.temperatureDisplayUnits)
+    getTemperatureDisplayUnits(callback, err) {
+      if (err) return callback(err)
+      return callback(null, this.temperatureDisplayUnits)
     }
-    setTemperatureDisplayUnits(value, callback) {
+    setTemperatureDisplayUnits(value, callback, err) {
+      if (err) return callback(err)
       this.temperatureDisplayUnits = value
-      callback()
+      return callback()
     }
-    setTargetTemperature(value, callback) {
-      this.device.setTemperature(value).then(() => callback())
+    setTargetTemperature(value, callback, err) {
+      if (err) return callback(err)
+      return this.device.setTemperature(value).then(() => callback(),
+        deviceErr => callback(deviceErr))
     }
-    setTargetHeatingCoolingState(value, callback) {
+    setTargetHeatingCoolingState(value, callback, err) {
+      if (err) return callback(err)
       switch (value) {
         case Characteristic.TargetHeatingCoolingState.OFF:
-          return this.device.turnOff().then(() => callback())
+          return this.device.turnOff().then(() => callback(), deviceErr => callback(deviceErr))
         case Characteristic.TargetHeatingCoolingState.HEAT:
-          return this.device.turnOn().then(() => callback())
+          return this.device.turnOn().then(() => callback(), deviceErr => callback(deviceErr))
         case Characteristic.TargetHeatingCoolingState.AUTO:
-          return this.device.automaticMode().then(() => callback())
+          return this.device.automaticMode().then(() => callback(),
+            deviceErr => callback(deviceErr))
         default: return callback('Unsupport mode')
       }
     }
