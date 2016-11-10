@@ -11,11 +11,6 @@ export default function createThermostat({ Service, Characteristic }) {
       this.isConnected = false
 
       this.temperatureDisplayUnits = Characteristic.TemperatureDisplayUnits.CELSIUS
-      this.temperature = 0
-      this.targetTemperature = 0
-      this.heatingThresholdTemperature = 0
-      this.heatingCoolingState = Characteristic.CurrentHeatingCoolingState.OFF
-      this.targetHeatingCoolingState = Characteristic.TargetHeatingCoolingState.OFF
 
       this.thermostatService = new Service.Thermostat(this.name)
     }
