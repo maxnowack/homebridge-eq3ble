@@ -23,8 +23,13 @@ export default function createThermostat({ Service, Characteristic }) {
         }
         this.connectPromise = this.connectPromise || new Promise((resolveConn, rejectConn) => {
           this.log(`connecting to thermostat (${this.address})`)
+          const connectionTimeout = setTimeout(() => {
+            this.log(`cannot connect to thermostat (${this.address})`)
+            rejectConn('connection timed out')
+          }, this.connectionTimeout)
           EQ3BLE.discoverByAddress(this.address, (device) => {
             device.connectAndSetup().then(() => {
+              clearTimeout(connectionTimeout)
               this.log(`connected to thermostat (${this.address})`)
               this.device = device
               this.isConnected = true
