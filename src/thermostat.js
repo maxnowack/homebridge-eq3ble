@@ -63,6 +63,12 @@ export default function createThermostat({ Service, Characteristic }) {
         fn(...args.concat(err))
       })
     }
+    getDeviceInfo() {
+      this.log(`getting thermostat info (${this.address})`)
+      return this.device.getInfo().then((info) => {
+        this.log(`got thermostat info (${this.address})`)
+        return info
+      })
     }
     getCachedInfo() {
       return new Promise((resolve, reject) => {
@@ -70,10 +76,8 @@ export default function createThermostat({ Service, Characteristic }) {
           resolve(this.info)
           return
         }
-        this.infoPromise = this.infoPromise || this.device.getInfo()
-        this.log(`getting thermostat info (${this.address})`)
+        this.infoPromise = this.infoPromise || this.getDeviceInfo()
         this.infoPromise.then((info) => {
-          this.log(`got thermostat info (${this.address})`)
           this.info = info
           this.infoPromise = null
           resolve(this.info)
