@@ -5,7 +5,8 @@ export default function createThermostat({ Service, Characteristic }) {
     constructor(log, config) {
       this.log = log
       this.address = config.address
-      this.connectionTimeout = config.timeout || (3 * 60 * 1000) // 3 minutes
+      this.discoverTimeout = config.discoverTimeout || (3 * 60 * 1000) // 3 minutes
+      this.connectionTimeout = config.connectionTimeout || (10 * 1000) // 10 seconds
       this.device = null
       this.info = null
       this.isConnected = false
@@ -13,41 +14,53 @@ export default function createThermostat({ Service, Characteristic }) {
       this.temperatureDisplayUnits = Characteristic.TemperatureDisplayUnits.CELSIUS
 
       this.thermostatService = new Service.Thermostat(this.name)
+      this.discovered = this.discover()
+      this.discovered.catch((err) => { throw err })
+    }
+    discover() {
+      return new Promise((resolve, reject) => {
+        this.log(`discovering thermostat (${this.address})`)
+        const discoverTimeout = setTimeout(() => {
+          this.log(`cannot discover thermostat (${this.address})`)
+          reject(`discovering thermostat timed out (${this.address})`)
+        }, this.discoverTimeout)
+        EQ3BLE.discoverByAddress(this.address, (device) => {
+          clearTimeout(discoverTimeout)
+          this.device = device
+          this.log(`discovered thermostat (${this.address})`)
+          resolve()
+        })
+      })
     }
     connect() {
-      return new Promise((resolve, reject) => {
-        clearTimeout(this.timeout)
-        if (this.isConnected) {
-          resolve()
-          return
-        }
-        this.connectPromise = this.connectPromise || new Promise((resolveConn, rejectConn) => {
+      return this.discovered.then(() => {
+        this.connectionPromise = this.connectionPromise || new Promise((resolve, reject) => {
+          clearTimeout(this.timeout)
+          if (this.isConnected) {
+            this.connectionPromise = null
+            resolve()
+            return
+          }
           this.log(`connecting to thermostat (${this.address})`)
-          const connectionTimeout = setTimeout(() => {
+          this.device.connectAndSetup().then(() => {
+            this.log(`connected to thermostat (${this.address})`)
+            this.connectionPromise = null
+            this.isConnected = true
+            resolve()
+          }, () => {
             this.log(`cannot connect to thermostat (${this.address})`)
-            rejectConn('connection timed out')
-          }, this.connectionTimeout)
-          EQ3BLE.discoverByAddress(this.address, (device) => {
-            device.connectAndSetup().then(() => {
-              clearTimeout(connectionTimeout)
-              this.log(`connected to thermostat (${this.address})`)
-              this.device = device
-              this.isConnected = true
-              this.connectPromise = null
-              resolveConn()
-            }, () => {
-              this.connectPromise = null
-              rejectConn()
-            })
+            this.connectionPromise = null
+            this.isConnected = false
+            reject()
           })
         })
-
-        this.connectPromise.then(resolve, reject)
+        return this.connectionPromise
       })
     }
     disconnect() {
       if (this.device) this.device.disconnect()
       this.isConnected = false
+      this.connectionPromise = null
       this.log(`disconnected from thermostat (${this.address})`)
     }
     startDisconnectTimeout() {
