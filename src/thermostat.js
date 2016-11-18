@@ -7,6 +7,7 @@ export default function createThermostat({ Service, Characteristic }) {
       this.address = config.address
       this.discoverTimeout = config.discoverTimeout || (60 * 1000) // 1 minute
       this.connectionTimeout = config.connectionTimeout || (10 * 1000) // 10 seconds
+      this.disableBoostSwitch = false
       this.device = null
       this.info = null
       this.isConnected = false
@@ -15,6 +16,13 @@ export default function createThermostat({ Service, Characteristic }) {
 
       this.thermostatService = new Service.Thermostat(this.name)
       this.informationService = new Service.AccessoryInformation()
+      this.boostService = new Service.Switch(`${this.name} boost mode`)
+
+      this.boostService
+        .setCharacteristic(Characteristic.Name, 'Boost Mode')
+        .getCharacteristic(Characteristic.On)
+        .on('get', this.execAfterConnect.bind(this, this.getBoost.bind(this)))
+        .on('set', this.execAfterConnect.bind(this, this.setBoost.bind(this)))
 
       this.informationService
         .setCharacteristic(Characteristic.Manufacturer, 'eq-3')
@@ -143,6 +151,13 @@ export default function createThermostat({ Service, Characteristic }) {
       })
     }
 
+    getBoost(callback, ...args) {
+      const lastArg = args && args[args.length - 1]
+      if (lastArg.isError) return callback(lastArg)
+      return this.getCachedInfo().then(({ boost }) => {
+        callback(null, boost)
+      }, deviceErr => callback(deviceErr))
+    }
     getCurrentHeatingCoolingState(callback, ...args) {
       const lastArg = args && args[args.length - 1]
       if (lastArg.isError) return callback(lastArg)
@@ -181,6 +196,12 @@ export default function createThermostat({ Service, Characteristic }) {
       if (lastArg.isError) return callback(lastArg)
       return callback(null, this.temperatureDisplayUnits)
     }
+    setBoost(value, callback, ...args) {
+      const lastArg = args && args[args.length - 1]
+      if (lastArg.isError) return callback(lastArg)
+      return this.device.setBoost(value).then(() => callback(),
+        deviceErr => callback(deviceErr))
+    }
     setTemperatureDisplayUnits(value, callback, ...args) {
       const lastArg = args && args[args.length - 1]
       if (lastArg.isError) return callback(lastArg)
@@ -212,7 +233,11 @@ export default function createThermostat({ Service, Characteristic }) {
     }
 
     getServices() {
-      return [this.informationService, this.thermostatService]
+      return [
+        this.informationService,
+        this.thermostatService,
+        !this.disableBoostSwitch && this.boostService,
+      ]
     }
   }
 }
