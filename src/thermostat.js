@@ -46,7 +46,7 @@ export default function createThermostat({ Service, Characteristic }) {
             this.log(`connection to thermostat timed out (${this.address})`)
             this.connectionPromise = null
             this.isConnected = false
-            reject()
+            reject(new Error(`connection to thermostat timed out (${this.address})`))
           }, this.discoverTimeout)
           this.device.connectAndSetup().then(() => {
             clearTimeout(this.connectTimeout)
@@ -54,12 +54,12 @@ export default function createThermostat({ Service, Characteristic }) {
             this.connectionPromise = null
             this.isConnected = true
             resolve()
-          }, () => {
+          }, (err) => {
             clearTimeout(this.connectTimeout)
             this.log(`cannot connect to thermostat (${this.address})`)
             this.connectionPromise = null
             this.isConnected = false
-            reject()
+            reject(err || new Error(`cannot connect to thermostat (${this.address})`))
           })
         })
         return this.connectionPromise
