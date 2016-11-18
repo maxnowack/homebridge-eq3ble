@@ -5,7 +5,7 @@ export default function createThermostat({ Service, Characteristic }) {
     constructor(log, config) {
       this.log = log
       this.address = config.address
-      this.discoverTimeout = config.discoverTimeout || (3 * 60 * 1000) // 3 minutes
+      this.discoverTimeout = config.discoverTimeout || (60 * 1000) // 1 minute
       this.connectionTimeout = config.connectionTimeout || (10 * 1000) // 10 seconds
       this.device = null
       this.info = null
