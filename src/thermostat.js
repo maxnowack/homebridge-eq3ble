@@ -14,6 +14,40 @@ export default function createThermostat({ Service, Characteristic }) {
       this.temperatureDisplayUnits = Characteristic.TemperatureDisplayUnits.CELSIUS
 
       this.thermostatService = new Service.Thermostat(this.name)
+      this.informationService = new Service.AccessoryInformation()
+
+      this.informationService
+        .setCharacteristic(Characteristic.Manufacturer, 'eq-3')
+        .setCharacteristic(Characteristic.Model, 'CC-RT-BLE')
+
+      this.thermostatService
+        .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
+        .on('get', this.execAfterConnect.bind(this, this.getCurrentHeatingCoolingState.bind(this)))
+
+      this.thermostatService
+        .getCharacteristic(Characteristic.TargetHeatingCoolingState)
+        .on('get', this.execAfterConnect.bind(this, this.getTargetHeatingCoolingState.bind(this)))
+        .on('set', this.execAfterConnect.bind(this, this.setTargetHeatingCoolingState.bind(this)))
+
+      this.thermostatService
+        .getCharacteristic(Characteristic.CurrentTemperature)
+        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+
+      this.thermostatService
+        .getCharacteristic(Characteristic.TargetTemperature)
+        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+        .on('set', this.execAfterConnect.bind(this, this.setTargetTemperature.bind(this)))
+
+      this.thermostatService
+        .getCharacteristic(Characteristic.TemperatureDisplayUnits)
+        .on('get', this.execAfterConnect.bind(this, this.getTemperatureDisplayUnits.bind(this)))
+        .on('set', this.execAfterConnect.bind(this, this.setTemperatureDisplayUnits.bind(this)))
+
+      this.thermostatService
+        .getCharacteristic(Characteristic.HeatingThresholdTemperature)
+        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+
+
       this.discovered = this.discover()
       this.discovered.catch((err) => { throw err })
     }
@@ -173,40 +207,7 @@ export default function createThermostat({ Service, Characteristic }) {
     }
 
     getServices() {
-      const informationService = new Service.AccessoryInformation()
-
-      informationService
-        .setCharacteristic(Characteristic.Manufacturer, 'eq-3')
-        .setCharacteristic(Characteristic.Model, 'CC-RT-BLE')
-
-      this.thermostatService
-        .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-        .on('get', this.execAfterConnect.bind(this, this.getCurrentHeatingCoolingState.bind(this)))
-
-      this.thermostatService
-        .getCharacteristic(Characteristic.TargetHeatingCoolingState)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetHeatingCoolingState.bind(this)))
-        .on('set', this.execAfterConnect.bind(this, this.setTargetHeatingCoolingState.bind(this)))
-
-      this.thermostatService
-        .getCharacteristic(Characteristic.CurrentTemperature)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
-
-      this.thermostatService
-        .getCharacteristic(Characteristic.TargetTemperature)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
-        .on('set', this.execAfterConnect.bind(this, this.setTargetTemperature.bind(this)))
-
-      this.thermostatService
-        .getCharacteristic(Characteristic.TemperatureDisplayUnits)
-        .on('get', this.execAfterConnect.bind(this, this.getTemperatureDisplayUnits.bind(this)))
-        .on('set', this.execAfterConnect.bind(this, this.setTemperatureDisplayUnits.bind(this)))
-
-      this.thermostatService
-        .getCharacteristic(Characteristic.HeatingThresholdTemperature)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
-
-      return [informationService, this.thermostatService]
+      return [this.informationService, this.thermostatService]
     }
   }
 }
