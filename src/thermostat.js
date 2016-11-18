@@ -160,8 +160,10 @@ export default function createThermostat({ Service, Characteristic }) {
       return this.getCachedInfo().then(({ targetTemperature, status }) => {
         if (targetTemperature <= 4.5) {
           callback(null, Characteristic.TargetHeatingCoolingState.OFF)
-        } else if (targetTemperature >= 30 || status.manual || status.boost) {
+        } else if (targetTemperature >= 30 || status.boost) {
           callback(null, Characteristic.TargetHeatingCoolingState.HEAT)
+        } else if (status.manual) {
+          callback(null, Characteristic.TargetHeatingCoolingState.COOL)
         } else {
           callback(null, Characteristic.TargetHeatingCoolingState.AUTO)
         }
@@ -201,6 +203,9 @@ export default function createThermostat({ Service, Characteristic }) {
           return this.device.turnOn().then(() => callback(), deviceErr => callback(deviceErr))
         case Characteristic.TargetHeatingCoolingState.AUTO:
           return this.device.automaticMode().then(() => callback(),
+            deviceErr => callback(deviceErr))
+        case Characteristic.TargetHeatingCoolingState.COOL:
+          return this.device.manualMode().then(() => callback(),
             deviceErr => callback(deviceErr))
         default: return callback('Unsupport mode')
       }
