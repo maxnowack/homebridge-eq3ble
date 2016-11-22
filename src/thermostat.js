@@ -56,13 +56,13 @@ export default function createThermostat({ Service, Characteristic }) {
         .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
 
 
-      this.discovered = this.discover()
-      this.discovered.catch((err) => { throw err })
+      this.discoverPromise = this.discover()
     }
     discover() {
       return new Promise((resolve, reject) => {
         this.log(`discovering thermostat (${this.address})`)
         const discoverTimeout = setTimeout(() => {
+          this.discoverPromise = null
           this.log(`cannot discover thermostat (${this.address})`)
           reject(`discovering thermostat timed out (${this.address})`)
         }, this.discoverTimeout)
@@ -71,11 +71,16 @@ export default function createThermostat({ Service, Characteristic }) {
           this.device = device
           this.log(`discovered thermostat (${this.address})`)
           resolve()
+        }, (err) => {
+          this.discoverPromise = null
+          this.log(`cannot discover thermostat (${this.address}): ${err}`)
+          reject(`discovering thermostat (${this.address}) resulted in error ${err}`)
         })
       })
     }
     connect() {
-      return this.discovered.then(() => {
+      this.discoverPromise = this.discoverPromise || this.discover()
+      return this.discoverPromise.then(() => {
         this.connectionPromise = this.connectionPromise || new Promise((resolve, reject) => {
           clearTimeout(this.timeout)
           if (this.isConnected) {
@@ -88,6 +93,7 @@ export default function createThermostat({ Service, Characteristic }) {
             this.log(`connection to thermostat timed out (${this.address})`)
             this.connectionPromise = null
             this.isConnected = false
+            this.discoverPromise = null
             reject(new Error(`connection to thermostat timed out (${this.address})`))
           }, this.discoverTimeout)
           this.device.connectAndSetup().then(() => {
@@ -101,6 +107,7 @@ export default function createThermostat({ Service, Characteristic }) {
             this.log(`cannot connect to thermostat (${this.address})`)
             this.connectionPromise = null
             this.isConnected = false
+            this.discoverPromise = null
             reject(err || new Error(`cannot connect to thermostat (${this.address})`))
           })
         })
