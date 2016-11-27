@@ -173,7 +173,6 @@ export default function createThermostat({ Service, Characteristic }) {
         fn(...args)
         this.startDisconnectTimeout()
       }, (err) => {
-        err.isError = true
         fn(...args.concat(err))
       })
     }
