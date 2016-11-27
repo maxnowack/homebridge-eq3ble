@@ -1,9 +1,11 @@
 import EQ3BLE from 'eq3ble'
+import mqtt from 'mqtt'
 
 export default function createThermostat({ Service, Characteristic }) {
   return class EQ3Thermostat {
     constructor(log, config) {
       this.log = log
+      this.name = config.name
       this.address = config.address
       this.discoverTimeout = config.discoverTimeout || (60 * 1000) // 1 minute
       this.connectionTimeout = config.connectionTimeout || (10 * 1000) // 10 seconds
@@ -17,6 +19,42 @@ export default function createThermostat({ Service, Characteristic }) {
       this.thermostatService = new Service.Thermostat(this.name)
       this.informationService = new Service.AccessoryInformation()
       this.boostService = new Service.Switch(`${this.name} boost mode`)
+      this.currentTemperature = null
+
+      if (config.currentTemperature) {
+        this.mqttClient = mqtt.connect(config.currentTemperature.url, {
+          keepalive: 10,
+          clientId: 'mqttjs_'.concat(Math.random().toString(16).substr(2, 8)),
+          protocolId: 'MQTT',
+          protocolVersion: 4,
+          clean: true,
+          reconnectPeriod: 1000,
+          connectTimeout: 30 * 1000,
+          will: {
+            topic: 'WillMsg',
+            payload: 'Connection Closed abnormally..!',
+            qos: 0,
+            retain: false,
+          },
+          username: config.currentTemperature.username,
+          password: config.currentTemperature.password,
+          rejectUnauthorized: false,
+        })
+
+        const that = this
+        this.mqttClient.on('connect', () => {
+          that.mqttClient.subscribe(config.currentTemperature.topic)
+        })
+
+        this.mqttClient.on('message', (topic, message) => {
+          const mqttData = JSON.parse(message)
+          if (mqttData === null) { return null }
+          that.currentTemperature = parseFloat(mqttData)
+          that.thermostatService
+            .setCharacteristic(Characteristic.CurrentTemperature, that.currentTemperature)
+          return that.currentTemperature
+        })
+      }
 
       this.boostService
         .setCharacteristic(Characteristic.Name, 'Boost Mode')
@@ -37,9 +75,15 @@ export default function createThermostat({ Service, Characteristic }) {
         .on('get', this.execAfterConnect.bind(this, this.getTargetHeatingCoolingState.bind(this)))
         .on('set', this.execAfterConnect.bind(this, this.setTargetHeatingCoolingState.bind(this)))
 
-      this.thermostatService
-        .getCharacteristic(Characteristic.CurrentTemperature)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+      if (this.mqttClient) {
+        this.thermostatService
+          .getCharacteristic(Characteristic.CurrentTemperature)
+          .on('get', this.getCurrentTemperature.bind(this))
+      } else {
+        this.thermostatService
+          .getCharacteristic(Characteristic.CurrentTemperature)
+          .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+      }
 
       this.thermostatService
         .getCharacteristic(Characteristic.TargetTemperature)
@@ -197,6 +241,10 @@ export default function createThermostat({ Service, Characteristic }) {
       return this.getCachedInfo().then(({ targetTemperature }) => {
         callback(null, targetTemperature < 10 ? 10 : targetTemperature)
       }, deviceErr => callback(deviceErr))
+    }
+    getCurrentTemperature(callback) {
+      this.log(this.name, ' - MQTT : ', this.currentTemperature)
+      callback(null, this.currentTemperature)
     }
     getTemperatureDisplayUnits(callback, ...args) {
       const lastArg = args && args[args.length - 1]

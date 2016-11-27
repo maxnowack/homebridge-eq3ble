@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "babel-core": "6.18.2",
-    "eq3ble": "1.0.0"
+    "eq3ble": "1.0.0",
+    "mqtt": "^1.12.0"
   },
   "devDependencies": {
     "babel-cli": "6.18.0",
