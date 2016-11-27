@@ -41,18 +41,17 @@ export default function createThermostat({ Service, Characteristic }) {
           rejectUnauthorized: false,
         })
 
-        const that = this
         this.mqttClient.on('connect', () => {
-          that.mqttClient.subscribe(config.currentTemperature.topic)
+          this.mqttClient.subscribe(config.currentTemperature.topic)
         })
 
         this.mqttClient.on('message', (topic, message) => {
           const mqttData = JSON.parse(message)
           if (mqttData === null) { return null }
-          that.currentTemperature = parseFloat(mqttData)
-          that.thermostatService
-            .setCharacteristic(Characteristic.CurrentTemperature, that.currentTemperature)
-          return that.currentTemperature
+          this.currentTemperature = parseFloat(mqttData)
+          this.thermostatService
+            .setCharacteristic(Characteristic.CurrentTemperature, this.currentTemperature)
+          return this.currentTemperature
         })
       }
 
@@ -100,7 +99,9 @@ export default function createThermostat({ Service, Characteristic }) {
         .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
 
 
-      this.discoverPromise = this.discover()
+      this.discoverPromise = this.discover().catch((err) => {
+        this.log(err)
+      })
     }
     discover() {
       return new Promise((resolve, reject) => {
@@ -108,7 +109,7 @@ export default function createThermostat({ Service, Characteristic }) {
         const discoverTimeout = setTimeout(() => {
           this.discoverPromise = null
           this.log(`cannot discover thermostat (${this.address})`)
-          reject(`discovering thermostat timed out (${this.address})`)
+          reject(new Error(`discovering thermostat timed out (${this.address})`))
         }, this.discoverTimeout)
         EQ3BLE.discoverByAddress(this.address, (device) => {
           clearTimeout(discoverTimeout)
@@ -118,7 +119,7 @@ export default function createThermostat({ Service, Characteristic }) {
         }, (err) => {
           this.discoverPromise = null
           this.log(`cannot discover thermostat (${this.address}): ${err}`)
-          reject(`discovering thermostat (${this.address}) resulted in error ${err}`)
+          reject(new Error(`discovering thermostat (${this.address}) resulted in error ${err}`))
         })
       })
     }
@@ -283,7 +284,7 @@ export default function createThermostat({ Service, Characteristic }) {
         case Characteristic.TargetHeatingCoolingState.COOL:
           return this.device.manualMode().then(() => callback(),
             deviceErr => callback(deviceErr))
-        default: return callback('Unsupport mode')
+        default: return callback('Unsupported mode')
       }
     }
 
