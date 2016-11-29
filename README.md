@@ -31,9 +31,9 @@ You can configure the homebridge integration for the thermostat with the followi
 | `discoverTimeout` | `60000` | time in milliseconds before a timeout error will be triggered |
 | `connectionTimeout` | `10000` | time in milliseconds before homebridge will disconnect from the device after last action |
 | `disableBoostSwitch` | `false` | if set to true, the boost switch won't be published from homebridge |
-| `currentTemperature` |  | [MQTT configuration for current temperature](#externalcurrenttemperature) |
+| `currentTemperature` |  | MQTT configuration for current temperature |
 
-### <a name="#externalcurrenttemperature"></a>External current temperature configuration options
+### External current temperature configuration options
 
 | Option | Description |
 | --- |  --- |
