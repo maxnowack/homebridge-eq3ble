@@ -1,6 +1,13 @@
 import EQ3BLE from 'eq3ble'
 import mqtt from 'mqtt'
 
+function simulateAndRespond(fn, characteristic, defaultValue, callback, ...args) {
+  callback(null, defaultValue)
+  fn((err, value) => {
+    characteristic.setValue(value)
+  }, ...args)
+}
+
 export default function createThermostat({ Service, Characteristic }) {
   return class EQ3Thermostat {
     constructor(log, config) {
@@ -55,48 +62,81 @@ export default function createThermostat({ Service, Characteristic }) {
         })
       }
 
-      this.boostService
-        .setCharacteristic(Characteristic.Name, 'Boost Mode')
-        .getCharacteristic(Characteristic.On)
-        .on('get', this.execAfterConnect.bind(this, this.getBoost.bind(this)))
+      const boostOn = this.boostService.getCharacteristic(Characteristic.On)
+      const currentHeatingCoolingState = this.thermostatService
+        .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
+      const targetHeatingCoolingState = this.thermostatService
+        .getCharacteristic(Characteristic.TargetHeatingCoolingState)
+      const currentTemperature = this.thermostatService
+        .getCharacteristic(Characteristic.CurrentTemperature)
+      const targetTemperature = this.thermostatService
+        .getCharacteristic(Characteristic.TargetTemperature)
+      const heatingThresholdTemperature = this.thermostatService
+        .getCharacteristic(Characteristic.HeatingThresholdTemperature)
+
+      boostOn
+        .on('get', simulateAndRespond.bind(null,
+          this.execAfterConnect.bind(this, this.getBoost.bind(this)),
+          boostOn,
+          false,
+        ))
         .on('set', this.execAfterConnect.bind(this, this.setBoost.bind(this)))
+
+      this.boostService.setCharacteristic(Characteristic.Name, 'Boost Mode')
 
       this.informationService
         .setCharacteristic(Characteristic.Manufacturer, 'eq-3')
         .setCharacteristic(Characteristic.Model, 'CC-RT-BLE')
 
-      this.thermostatService
-        .getCharacteristic(Characteristic.CurrentHeatingCoolingState)
-        .on('get', this.execAfterConnect.bind(this, this.getCurrentHeatingCoolingState.bind(this)))
+      currentHeatingCoolingState
+        .on('get', simulateAndRespond.bind(null,
+          this.execAfterConnect.bind(this, this.getCurrentHeatingCoolingState.bind(this)),
+          currentHeatingCoolingState,
+          Characteristic.CurrentHeatingCoolingState.OFF,
+        ))
 
-      this.thermostatService
-        .getCharacteristic(Characteristic.TargetHeatingCoolingState)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetHeatingCoolingState.bind(this)))
+      targetHeatingCoolingState
+        .on('get', simulateAndRespond.bind(null,
+          this.execAfterConnect.bind(this, this.getTargetHeatingCoolingState.bind(this)),
+          targetHeatingCoolingState,
+          Characteristic.TargetHeatingCoolingState.OFF,
+        ))
         .on('set', this.execAfterConnect.bind(this, this.setTargetHeatingCoolingState.bind(this)))
 
       if (this.mqttClient) {
-        this.thermostatService
-          .getCharacteristic(Characteristic.CurrentTemperature)
+        currentTemperature
           .on('get', this.getCurrentTemperature.bind(this))
       } else {
-        this.thermostatService
-          .getCharacteristic(Characteristic.CurrentTemperature)
-          .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+        currentTemperature
+          .on('get', simulateAndRespond.bind(null,
+            this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)),
+            currentTemperature,
+            0,
+          ))
       }
 
-      this.thermostatService
-        .getCharacteristic(Characteristic.TargetTemperature)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+      targetTemperature
+        .on('get', simulateAndRespond.bind(null,
+          this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)),
+          targetTemperature,
+          0,
+        ))
         .on('set', this.execAfterConnect.bind(this, this.setTargetTemperature.bind(this)))
 
       this.thermostatService
         .getCharacteristic(Characteristic.TemperatureDisplayUnits)
-        .on('get', this.execAfterConnect.bind(this, this.getTemperatureDisplayUnits.bind(this)))
-        .on('set', this.execAfterConnect.bind(this, this.setTemperatureDisplayUnits.bind(this)))
+        .on('get', callback => callback(null, this.temperatureDisplayUnits))
+        .on('set', (value, callback) => {
+          this.temperatureDisplayUnits = value
+          callback()
+        })
 
-      this.thermostatService
-        .getCharacteristic(Characteristic.HeatingThresholdTemperature)
-        .on('get', this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)))
+      heatingThresholdTemperature
+        .on('get', simulateAndRespond.bind(null,
+          this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)),
+          heatingThresholdTemperature,
+          0,
+        ))
 
 
       this.discoverPromise = this.discover().catch((err) => {
@@ -205,14 +245,14 @@ export default function createThermostat({ Service, Characteristic }) {
 
     getBoost(callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       return this.getCachedInfo().then(({ boost }) => {
         callback(null, boost)
       }, deviceErr => callback(deviceErr))
     }
     getCurrentHeatingCoolingState(callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       return this.getCachedInfo().then(({ valvePosition }) => {
         if (valvePosition) {
           callback(null, Characteristic.CurrentHeatingCoolingState.HEAT)
@@ -223,7 +263,7 @@ export default function createThermostat({ Service, Characteristic }) {
     }
     getTargetHeatingCoolingState(callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       return this.getCachedInfo().then(({ targetTemperature, status }) => {
         if (targetTemperature <= 4.5) {
           callback(null, Characteristic.TargetHeatingCoolingState.OFF)
@@ -238,7 +278,7 @@ export default function createThermostat({ Service, Characteristic }) {
     }
     getTargetTemperature(callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       return this.getCachedInfo().then(({ targetTemperature }) => {
         callback(null, targetTemperature < 10 ? 10 : targetTemperature)
       }, deviceErr => callback(deviceErr))
@@ -247,32 +287,21 @@ export default function createThermostat({ Service, Characteristic }) {
       this.log(this.name, ' - MQTT : ', this.currentTemperature)
       callback(null, this.currentTemperature)
     }
-    getTemperatureDisplayUnits(callback, ...args) {
-      const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
-      return callback(null, this.temperatureDisplayUnits)
-    }
     setBoost(value, callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       return this.device.setBoost(value).then(() => callback(),
         deviceErr => callback(deviceErr))
     }
-    setTemperatureDisplayUnits(value, callback, ...args) {
-      const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
-      this.temperatureDisplayUnits = value
-      return callback()
-    }
     setTargetTemperature(value, callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       return this.device.setTemperature(value).then(() => callback(),
         deviceErr => callback(deviceErr))
     }
     setTargetHeatingCoolingState(value, callback, ...args) {
       const lastArg = args && args[args.length - 1]
-      if (lastArg.isError) return callback(lastArg)
+      if (lastArg && lastArg.isError) return callback(lastArg)
       switch (value) {
         case Characteristic.TargetHeatingCoolingState.OFF:
           return this.device.turnOff().then(() => callback(), deviceErr => callback(deviceErr))
