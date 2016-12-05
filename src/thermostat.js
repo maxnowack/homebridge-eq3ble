@@ -1,5 +1,6 @@
 import EQ3BLE from 'eq3ble'
 import mqtt from 'mqtt'
+import validateAddress from 'is-mac'
 
 function simulateAndRespond(fn, characteristic, defaultValue, callback, ...args) {
   callback(null, defaultValue)
@@ -13,7 +14,12 @@ export default function createThermostat({ Service, Characteristic }) {
     constructor(log, config) {
       this.log = log
       this.name = config.name
-      this.address = config.address
+      this.address = config.address.toLowerCase()
+
+      if (!validateAddress(this.address)) {
+        throw new Error(`invalid address "${this.address}" fro device "${this.name}"`)
+      }
+
       this.discoverTimeout = config.discoverTimeout || (60 * 1000) // 1 minute
       this.connectionTimeout = config.connectionTimeout || (10 * 1000) // 10 seconds
       this.disableBoostSwitch = false
