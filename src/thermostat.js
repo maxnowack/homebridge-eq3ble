@@ -125,7 +125,7 @@ export default function createThermostat({ Service, Characteristic }) {
         .on('get', simulateAndRespond.bind(null,
           this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)),
           targetTemperature,
-          0,
+          10,
         ))
         .on('set', this.execAfterConnect.bind(this, this.setTargetTemperature.bind(this)))
 
@@ -141,7 +141,7 @@ export default function createThermostat({ Service, Characteristic }) {
         .on('get', simulateAndRespond.bind(null,
           this.execAfterConnect.bind(this, this.getTargetTemperature.bind(this)),
           heatingThresholdTemperature,
-          0,
+          10,
         ))
 
 
