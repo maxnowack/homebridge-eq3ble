@@ -196,6 +196,7 @@ export default function createThermostat({ Service, Characteristic }) {
           }, (err) => {
             clearTimeout(this.connectTimeout)
             this.log(`cannot connect to thermostat (${this.address})`)
+            this.log(err)
             this.connectionPromise = null
             this.isConnected = false
             this.discoverPromise = null
