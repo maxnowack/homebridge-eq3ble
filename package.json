@@ -32,22 +32,38 @@
     "homebridge": ">=0.2.0"
   },
   "babel": {
-    "presets": ["es2015", "stage-0"],
-    "plugins": ["transform-class-properties"]
+    "presets": [
+      "es2015",
+      "stage-0"
+    ],
+    "plugins": [
+      "transform-class-properties"
+    ]
   },
   "eslintConfig": {
-    "extends": ["airbnb-base"],
+    "extends": [
+      "airbnb-base"
+    ],
     "parser": "babel-eslint",
     "rules": {
-      "semi": [2, "never"],
-      "no-param-reassign": [2, { "props": false }]
+      "semi": [
+        2,
+        "never"
+      ],
+      "no-param-reassign": [
+        2,
+        {
+          "props": false
+        }
+      ]
     }
   },
   "dependencies": {
     "babel-core": "6.18.2",
     "eq3ble": "1.0.0",
     "is-mac": "1.0.1",
-    "mqtt": "1.12.0"
+    "mqtt": "1.12.0",
+    "p-timeout": "1.0.0"
   },
   "devDependencies": {
     "babel-cli": "6.18.0",
