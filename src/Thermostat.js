@@ -8,7 +8,7 @@ import parseInfo from './parseInfo'
 export default class Thermostat extends EventEmitter {
   constructor({ address, discoverTimeout, connectionTimeout }) {
     super()
-    this.address = address
+    this.address = address.toLowerCase()
     this.discoverTimeout = discoverTimeout
     this.connectionTimeout = connectionTimeout
 
