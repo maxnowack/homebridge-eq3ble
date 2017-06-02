@@ -56,8 +56,16 @@ function thermostatFactory({ Service, Characteristic }) {
         .getCharacteristic(Characteristic.TargetHeatingCoolingState)
       const currentTemperature = this.thermostatService
         .getCharacteristic(Characteristic.CurrentTemperature)
+        .setProps({
+          minValue: 4.5,
+          maxValue: 30,
+        })
       const targetTemperature = this.thermostatService
         .getCharacteristic(Characteristic.TargetTemperature)
+        .setProps({
+          minValue: 4.5,
+          maxValue: 30,
+        })
       const heatingThresholdTemperature = this.thermostatService
         .getCharacteristic(Characteristic.HeatingThresholdTemperature)
 
