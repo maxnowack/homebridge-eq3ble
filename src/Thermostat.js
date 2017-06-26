@@ -33,6 +33,7 @@ export default class Thermostat extends EventEmitter {
   }
 
   connect() {
+    this.blockSets = true
     this.discoverPromise = this.discoverPromise || this.discover()
     return this.discoverPromise.then(() => {
       this.connectionPromise = this.connectionPromise || pTimeout(new Promise((resolve, reject) => {
@@ -47,17 +48,21 @@ export default class Thermostat extends EventEmitter {
           this.emit('connected', this.device)
           this.connectionPromise = null
           this.isConnected = true
+          this.blockSets = false
           this.startDisconnectTimeout()
           resolve()
         }, (err) => {
           this.emit('connectionError', err)
           this.connectionPromise = null
           this.isConnected = false
+          this.blockSets = false
           this.discoverPromise = null
           reject(err)
         })
       }), this.connectionTimeout)
       return this.connectionPromise
+    }, () => {
+      this.blockSets = false
     })
   }
 
@@ -99,12 +104,15 @@ export default class Thermostat extends EventEmitter {
     })
   }
   setBoost(boost) {
+    if (this.blockSets) return new Promise((resolve, reject) => reject(false))
     return this.connect().then(() => this.device.setBoost(boost))
   }
   setTargetTemperature(temperature) {
+    if (this.blockSets) return new Promise((resolve, reject) => reject(false))
     return this.connect().then(() => this.device.setTemperature(temperature))
   }
   setTargetHeatingCoolingState(state) {
+    if (this.blockSets) return new Promise((resolve, reject) => reject(false))
     return this.connect().then(() => {
       switch (state) {
         case TargetHeatingCoolingState.OFF: return this.device.turnOff()
