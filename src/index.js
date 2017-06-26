@@ -1,7 +1,9 @@
 import Thermostat from './Thermostat'
 import MQTTClient from './MQTTClient'
 import callbackify from './callbackify'
-import { map as mapValue } from './constants'
+import { map as mapValue, TargetHeatingCoolingState, CurrentHeatingCoolingState } from './constants'
+
+const defaultHook = value => callback => callback(null, value)
 
 function thermostatFactory({ Service, Characteristic }) {
   return class EQ3Thermostat {
@@ -69,28 +71,36 @@ function thermostatFactory({ Service, Characteristic }) {
       const heatingThresholdTemperature = this.thermostatService
         .getCharacteristic(Characteristic.HeatingThresholdTemperature)
 
+
+      const defaultBoost = defaultHook(false)
+      const defaultCurrentState = defaultHook(CurrentHeatingCoolingState.OFF)
+      const defaultTargetState = defaultHook(TargetHeatingCoolingState.OFF)
+      const defaultTemperature = defaultHook(0)
+
       boostOn
-        .on('get', callbackify(() => this.getInfoValue('boost')))
+        .on('get', callbackify(() => this.getInfoValue('boost'), defaultBoost))
         .on('set', callbackify(boost => this.thermostat.setBoost(boost)))
 
       currentHeatingCoolingState
-        .on('get', callbackify(() => this.getInfoValue('currentHeatingCoolingState')))
+        .on('get', callbackify(() =>
+          this.getInfoValue('currentHeatingCoolingState'), defaultCurrentState))
 
       targetHeatingCoolingState
-        .on('get', callbackify(() => this.getInfoValue('targetHeatingCoolingState')))
+        .on('get', callbackify(() =>
+          this.getInfoValue('targetHeatingCoolingState'), defaultTargetState))
         .on('set', callbackify(state => this.thermostat.setTargetHeatingCoolingState(state)))
 
       currentTemperature
         .on('get', this.currentTemperature == null
-          ? callbackify(() => this.getInfoValue('targetTemperature'))
+          ? callbackify(() => this.getInfoValue('targetTemperature'), defaultTemperature)
           : callback => callback(null, this.currentTemperature))
 
       targetTemperature
-        .on('get', callbackify(() => this.getInfoValue('targetTemperature')))
+        .on('get', callbackify(() => this.getInfoValue('targetTemperature'), defaultTemperature))
         .on('set', callbackify(temperature => this.thermostat.setTargetTemperature(temperature)))
 
       heatingThresholdTemperature
-        .on('get', callbackify(() => this.getInfoValue('targetTemperature')))
+        .on('get', callbackify(() => this.getInfoValue('targetTemperature'), defaultTemperature))
 
       this.thermostat.on('info', (info) => {
         boostOn.setValue(info.boost)
