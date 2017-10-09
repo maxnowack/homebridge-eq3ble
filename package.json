@@ -44,27 +44,12 @@
     "extends": [
       "airbnb-base"
     ],
-    "parser": "babel-eslint",
-    "rules": {
-      "semi": [
-        2,
-        "never"
-      ],
-      "no-param-reassign": [
-        2,
-        {
-          "props": false
-        }
-      ]
-    }
+    "parser": "babel-eslint"
   },
   "dependencies": {
-    "is-mac": "1.0.1",
-    "p-timeout": "1.0.0"
     "babel-core": "6.26.0",
     "dot-prop": "^4.2.0",
-    "eq3ble": "2.0.0-beta.0",
-    "mqtt": "2.13.0"
+    "eq3ble": "^2.0.0-beta.1"
   },
   "devDependencies": {
     "babel-cli": "6.26.0",
