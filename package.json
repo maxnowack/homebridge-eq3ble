@@ -7,6 +7,7 @@
     "start": "NODE=production node ./dist/index",
     "dev": "npm run build && ./node_modules/.bin/homebridge -D -U ./homebridge-config -P ./",
     "lint": "./node_modules/.bin/eslint src",
+    "test": "npm run lint",
     "build": "./node_modules/.bin/babel src -d dist"
   },
   "author": "Max Nowack <max@unsou.de>",
