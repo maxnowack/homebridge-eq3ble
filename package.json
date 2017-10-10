@@ -1,7 +1,7 @@
 {
   "name": "homebridge-eq3ble",
-  "version": "1.3.2",
-  "description": "Homebridge plugin to control EQ3 bluetooth thermostats",
+  "version": "2.0.0-beta.0",
+  "description": "Homebridge platform to control EQ3 bluetooth thermostats",
   "main": "dist/index.js",
   "scripts": {
     "start": "NODE=production node ./dist/index",
