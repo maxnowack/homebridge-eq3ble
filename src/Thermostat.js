@@ -6,11 +6,12 @@ import { TargetHeatingCoolingState } from './constants'
 import parseInfo from './parseInfo'
 
 export default class Thermostat extends EventEmitter {
-  constructor({ address, discoverTimeout, connectionTimeout }) {
+  constructor({ address, manual, discoverTimeout, connectionTimeout }) {
     super()
     this.address = address.toLowerCase()
     this.discoverTimeout = discoverTimeout
     this.connectionTimeout = connectionTimeout
+    this.manual = manual
 
     if (!validateAddress(this.address)) {
       throw new Error(`invalid address "${this.address}"`)
@@ -106,13 +107,23 @@ export default class Thermostat extends EventEmitter {
   }
   setTargetHeatingCoolingState(state) {
     return this.connect().then(() => {
-      switch (state) {
-        case TargetHeatingCoolingState.OFF: return this.device.turnOff()
-        case TargetHeatingCoolingState.HEAT: return this.device.turnOn()
-        case TargetHeatingCoolingState.AUTO: return this.device.automaticMode()
-        case TargetHeatingCoolingState.COOL: return this.device.manualMode()
-        default: throw new Error('Unsupported mode')
-      }
+			if (this.manual) {
+				switch (state) {
+					case TargetHeatingCoolingState.OFF: return this.device.turnOff()
+					case TargetHeatingCoolingState.HEAT: return this.device.manualMode()
+					case TargetHeatingCoolingState.AUTO: return this.device.manualMode()
+					case TargetHeatingCoolingState.COOL: return this.device.manualMode()
+					default: throw new Error('Unsupported mode')
+				}
+			}else{
+				switch (state) {
+					case TargetHeatingCoolingState.OFF: return this.device.turnOff()
+					case TargetHeatingCoolingState.HEAT: return this.device.turnOn()
+					case TargetHeatingCoolingState.AUTO: return this.device.automaticMode()
+					case TargetHeatingCoolingState.COOL: return this.device.manualMode()
+					default: throw new Error('Unsupported mode')
+				}
+			}
     })
   }
 }
