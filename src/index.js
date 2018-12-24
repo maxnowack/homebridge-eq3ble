@@ -9,6 +9,7 @@ function thermostatFactory({ Service, Characteristic }) {
       this.log = log
       this.name = config.name
       this.address = config.address.toLowerCase()
+      this.manualOnly = config.manualOnly || false
       this.discoverTimeout = config.discoverTimeout || (60 * 1000) // 1 minute
       this.connectionTimeout = config.connectionTimeout || (10 * 1000) // 10 seconds
       this.disableBoostSwitch = false
@@ -16,6 +17,7 @@ function thermostatFactory({ Service, Characteristic }) {
 
       this.thermostat = new Thermostat({
         address: this.address,
+        manualOnly: this.manualOnly,
         discoverTimeout: this.discoverTimeout,
         connectionTimeout: this.connectionTimeout,
       })

@@ -28,6 +28,7 @@ You can configure the homebridge integration for the thermostat with the followi
 | Option | Default value | Description |
 | --- | --- | --- |
 | `address` *(required)* |  | Address of the thermostat |
+| `manualOnly` | `false` | This will tell the thermostat to use manual mode only |
 | `discoverTimeout` | `60000` | time in milliseconds before a timeout error will be triggered |
 | `connectionTimeout` | `10000` | time in milliseconds before homebridge will disconnect from the device after last action |
 | `disableBoostSwitch` | `false` | if set to true, the boost switch won't be published from homebridge |
