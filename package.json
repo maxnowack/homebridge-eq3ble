@@ -4,6 +4,7 @@
   "description": "Homebridge plugin to control EQ3 bluetooth thermostats",
   "main": "dist/index.js",
   "scripts": {
+    "prepare": "npm run build",
     "start": "NODE=production node ./dist/index",
     "dev": "npm run build && ./node_modules/.bin/homebridge -D -U ./homebridge-config -P ./",
     "lint": "./node_modules/.bin/eslint src",
