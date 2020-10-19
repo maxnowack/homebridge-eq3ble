@@ -61,7 +61,7 @@
   },
   "dependencies": {
     "babel-core": "6.18.2",
-    "dot-prop": "^4.1.0",
+    "dot-prop": "^5.1.1",
     "eq3ble": "git+https://github.com/maxnowack/node-eq3ble.git",
     "is-mac": "1.0.1",
     "mqtt": "1.12.0",
