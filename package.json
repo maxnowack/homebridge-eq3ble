@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "npm run build",
     "start": "NODE=production node ./dist/index",
-    "dev": "npm run build && ./node_modules/.bin/homebridge -D -U ./homebridge-config -P ./",
+    "dev": "npm run build && homebridge -D -U ./homebridge-config -P ./",
     "lint": "./node_modules/.bin/eslint src",
     "build": "./node_modules/.bin/babel src -d dist"
   },
@@ -77,7 +77,6 @@
     "eslint": "3.9.1",
     "eslint-config-airbnb-base": "10.0.1",
     "eslint-plugin-babel": "3.3.0",
-    "eslint-plugin-import": "2.2.0",
-    "homebridge": "0.4.8"
+    "eslint-plugin-import": "2.2.0"
   }
 }
